@@ -7,6 +7,7 @@ import com.alertify.monitorservice.domain.entity.Monitor;
 import com.alertify.monitorservice.domain.entity.Rule;
 import com.alertify.monitorservice.domain.repository.MonitorRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Primary
 @Component
 @RequiredArgsConstructor
 public class MonitorRepositoryAdapter implements MonitorRepository {
@@ -48,7 +50,6 @@ public class MonitorRepositoryAdapter implements MonitorRepository {
             entity.getRules().addAll(
                     monitor.getRules().stream()
                             .map(rule -> RuleJpaEntity.builder()
-                                    .id(rule.getId())
                                     .monitor(entity)
                                     .type(rule.getType())
                                     .config(rule.getConfig())
@@ -86,6 +87,13 @@ public class MonitorRepositoryAdapter implements MonitorRepository {
     @Override
     public Boolean existsByUrl(String url) {
         return repository.existsByUrl(url);
+    }
+
+    @Override
+    public List<Monitor> findByStatus(String status) {
+        return repository.findByStatusWithRules(status).stream()
+                .map(this::mapToDomain)
+                .collect(Collectors.toList());
     }
 
     private Monitor mapToDomain(MonitorJpaEntity entity) {

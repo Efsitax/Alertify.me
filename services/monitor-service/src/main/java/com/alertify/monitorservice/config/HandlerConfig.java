@@ -1,5 +1,7 @@
 package com.alertify.monitorservice.config;
 
+import com.alertify.monitorservice.adapter.out.jpa.adapter.MonitorRepositoryAdapter;
+import com.alertify.monitorservice.adapter.out.jpa.repository.MonitorJpaRepository;
 import com.alertify.monitorservice.application.command.handler.monitor.CreateMonitorHandler;
 import com.alertify.monitorservice.application.command.handler.monitor.DeleteMonitorHandler;
 import com.alertify.monitorservice.application.command.handler.monitor.UpdateMonitorHandler;
@@ -16,8 +18,10 @@ import com.alertify.monitorservice.domain.repository.RuleRepository;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 @Configuration
+@EnableScheduling
 public class HandlerConfig {
     // MONITOR HANDLERS
     @Bean
@@ -67,5 +71,10 @@ public class HandlerConfig {
     public GetRulesByMonitorIdHandler getRulesByMonitorIdHandler(RuleRepository ruleRepository,
                                                                 @Qualifier("ruleMapperImpl") RuleMapper mapper) {
         return new GetRulesByMonitorIdHandler(ruleRepository, mapper);
+    }
+
+    @Bean
+    MonitorRepository monitorRepository(MonitorJpaRepository repo) {
+        return new MonitorRepositoryAdapter(repo);
     }
 }

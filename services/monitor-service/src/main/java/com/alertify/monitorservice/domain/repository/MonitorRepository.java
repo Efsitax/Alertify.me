@@ -13,4 +13,5 @@ public interface MonitorRepository {
     void delete(String id);
     Boolean existsById(String id);
     Boolean existsByUrl(String url);
+    List<Monitor> findByStatus(String status);
 }

@@ -7,12 +7,14 @@ import com.alertify.monitorservice.domain.entity.Monitor;
 import com.alertify.monitorservice.domain.entity.Rule;
 import com.alertify.monitorservice.domain.repository.RuleRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@Primary
 @Component
 @RequiredArgsConstructor
 public class RuleRepositoryAdapter implements RuleRepository {
