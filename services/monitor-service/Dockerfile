@@ -1,12 +1,12 @@
 FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
 
-COPY ./gradlew ./gradlew
-COPY ./gradle ./gradle
-COPY ./build.gradle.kts ./settings.gradle.kts ./
+COPY gradlew ./
+COPY gradle gradle
+COPY build.gradle.kts settings.gradle.kts ./
 
-COPY ./libs ./libs
-COPY ./services/monitor-service ./services/monitor-service
+COPY services/monitor-service services/monitor-service
+COPY libs libs
 
 RUN chmod +x ./gradlew && ./gradlew :services:monitor-service:bootJar --no-daemon
 
