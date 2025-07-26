@@ -54,6 +54,5 @@ jobs:
 
       - name: Build and push Docker image
         run: |
-          IMAGE_NAME=${{ env.REGISTRY }}/${{ env.IMAGE_OWNER }}/alertify-${{ matrix.service }}
-          docker build -t $IMAGE_NAME:latest ${{ matrix.service }}
+          IMAGE_NAME=${{ env.REGISTRY }}/$(echo "${{ env.IMAGE_OWNER }}" | tr '[:upper:]' '[:lower:]')/alertify-${{ matrix.service }}          docker build -t $IMAGE_NAME:latest ${{ matrix.service }}
           docker push $IMAGE_NAME:latest
