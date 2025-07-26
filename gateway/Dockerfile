@@ -1,13 +1,10 @@
 FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
-
-COPY gradlew ./
+COPY gradlew gradlew
 COPY gradle gradle
 COPY build.gradle.kts settings.gradle.kts ./
-
-COPY gateway gateway
 COPY libs libs
-
+COPY gateway gateway
 RUN chmod +x ./gradlew && ./gradlew :gateway:bootJar --no-daemon
 
 FROM eclipse-temurin:21-jre
