@@ -33,13 +33,13 @@ jobs:
         run: ./gradlew clean build --no-daemon
 
   docker-build:
-    name: Docker Build & Push (per service)
+    name: Docker Build & Push
     needs: build-test
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        service: [ "gateway", "services/monitor-service", "services/fetcher-service" ]
+        service: [ "gateway", "services/monitor-service" ]
 
     steps:
       - name: Checkout code
@@ -58,5 +58,6 @@ jobs:
           SERVICE_NAME=$(basename "${{ matrix.service }}")
           IMAGE_NAME="${{ env.REGISTRY }}/${OWNER_LC}/alertify-${SERVICE_NAME}"
           echo "Building image: $IMAGE_NAME:latest"
+          
           docker build -t "$IMAGE_NAME:latest" "${{ matrix.service }}"
           docker push "$IMAGE_NAME:latest"
