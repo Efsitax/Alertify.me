@@ -1,6 +1,5 @@
 plugins {
     `kotlin-dsl` apply false
-
     id("io.spring.dependency-management") version "1.1.5"
 }
 
