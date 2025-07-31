@@ -8,6 +8,11 @@ public abstract class DomainException extends RuntimeException {
         this.errorCode = errorCode;
     }
 
+    protected DomainException(String errorCode, String message, Throwable cause) {
+        super(message, cause);
+        this.errorCode = errorCode;
+    }
+
     public String getErrorCode() {
         return errorCode;
     }

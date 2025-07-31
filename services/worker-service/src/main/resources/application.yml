@@ -1,0 +1,47 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: worker-service
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/alertify_worker
+    username: postgres
+    password: 1234
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    admin:
+      auto-create: true
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: alertify-worker
+      auto-offset-reset: earliest
+    properties:
+      spring.json.add.type.headers: false
+    topic:
+      alerts: alert.created
+
+services:
+  monitor-service:
+    url: http://localhost:8080
+  fetcher-service:
+    url: http://localhost:8081
+
+worker:
+  schedule:
+    interval: 300000
+
+logging:
+  level:
+    root: INFO
+    org.springframework.web: WARN

@@ -1,5 +1,13 @@
 rootProject.name = "alertify"
 
-include("libs:common-domain")
-include("services:monitor-service")
-include("gateway")
+include(
+    "gateway",
+    "libs:common-domain",
+    "libs:common-web",
+    "libs:common-utils",
+    "libs:common-test",
+    "services:monitor-service",
+    "services:fetcher-service",
+    "services:worker-service",
+    "services:notification-service"
+)

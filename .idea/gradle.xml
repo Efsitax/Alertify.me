@@ -12,8 +12,14 @@
             <option value="$PROJECT_DIR$/gateway" />
             <option value="$PROJECT_DIR$/libs" />
             <option value="$PROJECT_DIR$/libs/common-domain" />
+            <option value="$PROJECT_DIR$/libs/common-test" />
+            <option value="$PROJECT_DIR$/libs/common-utils" />
+            <option value="$PROJECT_DIR$/libs/common-web" />
             <option value="$PROJECT_DIR$/services" />
+            <option value="$PROJECT_DIR$/services/fetcher-service" />
             <option value="$PROJECT_DIR$/services/monitor-service" />
+            <option value="$PROJECT_DIR$/services/notification-service" />
+            <option value="$PROJECT_DIR$/services/worker-service" />
           </set>
         </option>
       </GradleProjectSettings>
