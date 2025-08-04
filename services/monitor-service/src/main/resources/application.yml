@@ -19,7 +19,51 @@ spring:
       hibernate:
         format_sql: true
 
+springdoc:
+  api-docs:
+    path: /api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    try-it-out-enabled: true
+    operations-sorter: alpha
+    tags-sorter: alpha
+    filter: true
+  show-actuator: true
+  group-configs:
+    - group: 'monitor-api'
+      display-name: 'Monitor Service API'
+      paths-to-match: '/api/**'
+  info:
+    title: 'Alertify Monitor Service'
+    description: 'Monitor and Rule management service for Alertify platform'
+    version: '1.0.0'
+    contact:
+      name: 'Alertify Development Team'
+      email: 'dev@alertify.me'
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: '@project.name@'
+    description: 'Monitor Service for Alertify Platform'
+    version: '@project.version@'
+    spring-boot-version: '@spring-boot.version@'
+
 logging:
   level:
     root: INFO
     org.springframework.web: WARN
+    com.alertify.monitor: DEBUG

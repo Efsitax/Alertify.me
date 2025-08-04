@@ -16,43 +16,55 @@ repositories {
 }
 
 dependencies {
+    // Spring Boot Starters
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.postgresql:postgresql")
+    implementation("org.springframework.boot:spring-boot-starter-actuator") // Health checks
+    implementation("org.springframework.boot:spring-boot-starter-validation") // Bean validation
+
+    // Database
+    runtimeOnly("org.postgresql:postgresql")
+
+    // Common libraries
     implementation(project(":libs:common-domain"))
     implementation(project(":libs:common-web"))
 
+    // OpenAPI/Swagger Dependencies
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
+
+    // Micrometer for metrics
+    implementation("io.micrometer:micrometer-registry-prometheus")
+
+    // Lombok
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
 
+    // MapStruct
     implementation("org.mapstruct:mapstruct:1.5.5.Final")
     annotationProcessor("org.mapstruct:mapstruct-processor:1.5.5.Final")
 
-    implementation("org.apache.commons:commons-compress:1.27.1")
-    implementation("org.apache.commons:commons-lang3:3.18.0")
-
+    // Test dependencies
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
     }
     testImplementation("org.testcontainers:junit-jupiter:1.20.0")
     testImplementation("org.testcontainers:postgresql:1.20.0")
+    testCompileOnly("org.projectlombok:lombok")
+    testAnnotationProcessor("org.projectlombok:lombok")
 }
 
+// Dependency management - Spring Boot BOM
 dependencyManagement {
     imports {
         mavenBom("org.springframework.boot:spring-boot-dependencies:3.3.0")
     }
-    dependencies {
-        dependency("org.apache.commons:commons-compress:1.27.1")
-        dependency("org.apache.commons:commons-lang3:3.18.0")
-    }
-}
-
-configurations.all {
-    exclude(group = "org.apache.commons", module = "commons-compress")
-    exclude(group = "org.apache.commons", module = "commons-lang3")
 }
 
 tasks.test {
     useJUnitPlatform()
+}
+
+// Explicit classpath for IDE
+tasks.withType<JavaCompile> {
+    options.annotationProcessorPath = configurations.annotationProcessor.get()
 }
