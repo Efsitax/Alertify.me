@@ -32,7 +32,8 @@ public class RuleEvaluator {
     private final AlertEventPublisher alertEventPublisher;
 
     public void evaluateAndProcess(Monitor monitor, MetricSample sample) {
-        // Save current snapshot first
+        Optional<Snapshot> previousSnapshotOpt = snapshotRepository.findLastByMonitorId(monitor.getId());
+
         Snapshot snapshot = Snapshot.builder()
                 .id(UUID.randomUUID())
                 .monitorId(monitor.getId())
@@ -43,10 +44,6 @@ public class RuleEvaluator {
                 .build();
         snapshotRepository.save(snapshot);
         log.debug("Saved snapshot for monitor {}: {} {}", monitor.getId(), sample.value(), sample.unit());
-
-        // Get previous snapshot (excluding current one)
-        Optional<Snapshot> previousSnapshotOpt = snapshotRepository.findLastByMonitorId(monitor.getId())
-                .filter(s -> !s.getAt().equals(sample.at()));
 
         List<Rule> rules = monitor.getRules() != null ? monitor.getRules() : List.of();
         log.debug("Evaluating {} rules for monitor {}", rules.size(), monitor.getId());
@@ -67,9 +64,13 @@ public class RuleEvaluator {
         switch (rule.getType().toUpperCase()) {
             case "TARGET_PRICE" -> {
                 BigDecimal target = getBigDecimal(config.get("targetPrice"));
+                log.debug("TARGET_PRICE calculation for monitor {}: current={}, target={}",
+                        sample.at(), sample.value(), target);
                 if (target != null && sample.value().compareTo(target) <= 0) {
                     log.info("TARGET_PRICE rule triggered: {} <= {}", sample.value(), target);
                     return true;
+                } else {
+                    log.debug("TARGET_PRICE rule not triggered: {} > {}", sample.value(), target);
                 }
             }
 
@@ -89,11 +90,18 @@ public class RuleEvaluator {
                             .divide(previousSnapshot.getValue(), 4, RoundingMode.HALF_UP)
                             .multiply(BigDecimal.valueOf(100));
 
+                    log.debug("PERCENT_DROP calculation for monitor {}: previous={}, current={}, drop={}%, threshold={}%",
+                            sample.at(), previousSnapshot.getValue(), sample.value(), diff, percent);
+
                     if (diff.compareTo(percent) >= 0) {
                         log.info("PERCENT_DROP rule triggered: {} dropped by {}% (threshold: {}%)",
                                 sample.value(), diff, percent);
                         return true;
+                    } else {
+                        log.debug("PERCENT_DROP rule not triggered: {}% < {}%", diff, percent);
                     }
+                } else {
+                    log.debug("PERCENT_DROP rule skipped: invalid percent config or zero previous value");
                 }
             }
 
