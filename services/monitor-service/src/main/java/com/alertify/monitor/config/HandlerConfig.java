@@ -2,6 +2,7 @@ package com.alertify.monitor.config;
 
 import com.alertify.monitor.adapter.out.jpa.adapter.MonitorRepositoryAdapter;
 import com.alertify.monitor.adapter.out.jpa.repository.MonitorJpaRepository;
+import com.alertify.monitor.adapter.out.metrics.MonitorMetricsService;
 import com.alertify.monitor.application.command.handler.monitor.CreateMonitorHandler;
 import com.alertify.monitor.application.command.handler.monitor.DeleteMonitorHandler;
 import com.alertify.monitor.application.command.handler.monitor.UpdateMonitorHandler;
@@ -25,8 +26,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 public class HandlerConfig {
     // MONITOR HANDLERS
     @Bean
-    public CreateMonitorHandler createMonitorHandler(MonitorRepository repository) {
-        return new CreateMonitorHandler(repository);
+    public CreateMonitorHandler createMonitorHandler(MonitorRepository repository,
+                                                     MonitorMetricsService metricsService) {
+        return new CreateMonitorHandler(repository, metricsService);
     }
 
     @Bean
@@ -36,13 +38,15 @@ public class HandlerConfig {
     }
 
     @Bean
-    public UpdateMonitorHandler updateMonitorHandler(MonitorRepository repository) {
-        return new UpdateMonitorHandler(repository);
+    public UpdateMonitorHandler updateMonitorHandler(MonitorRepository repository,
+                                                     MonitorMetricsService metricsService) {
+        return new UpdateMonitorHandler(repository, metricsService);
     }
 
     @Bean
-    public DeleteMonitorHandler deleteMonitorHandler(MonitorRepository repository) {
-        return new DeleteMonitorHandler(repository);
+    public DeleteMonitorHandler deleteMonitorHandler(MonitorRepository repository,
+                                                     MonitorMetricsService metricsService) {
+        return new DeleteMonitorHandler(repository, metricsService);
     }
 
     @Bean
@@ -53,18 +57,22 @@ public class HandlerConfig {
 
     //RULE HANDLERS
     @Bean
-    public CreateRuleHandler createRuleHandler(MonitorRepository monitorRepository, RuleRepository ruleRepository) {
-        return new CreateRuleHandler(monitorRepository, ruleRepository);
+    public CreateRuleHandler createRuleHandler(MonitorRepository monitorRepository,
+                                               RuleRepository ruleRepository,
+                                               MonitorMetricsService metricsService) {
+        return new CreateRuleHandler(monitorRepository, ruleRepository, metricsService);
     }
 
     @Bean
-    public UpdateRuleHandler updateRuleHandler(RuleRepository ruleRepository) {
-        return new UpdateRuleHandler(ruleRepository);
+    public UpdateRuleHandler updateRuleHandler(RuleRepository ruleRepository,
+                                               MonitorMetricsService metricsService) {
+        return new UpdateRuleHandler(ruleRepository, metricsService);
     }
 
     @Bean
-    public DeleteRuleHandler deleteRuleHandler(RuleRepository ruleRepository) {
-        return new DeleteRuleHandler(ruleRepository);
+    public DeleteRuleHandler deleteRuleHandler(RuleRepository ruleRepository,
+                                               MonitorMetricsService metricsService) {
+        return new DeleteRuleHandler(ruleRepository, metricsService);
     }
 
     @Bean

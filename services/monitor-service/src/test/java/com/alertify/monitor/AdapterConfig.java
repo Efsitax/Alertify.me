@@ -10,8 +10,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @EntityScan(basePackages = "com.alertify.monitor.adapter.out.jpa.entity")
 @ComponentScan(basePackages = {
         "com.alertify.monitor.adapter.out.jpa.adapter",
-        "com.alertify.monitor.application.mapper",
-        "com.alertify.monitor.scheduler"
+        "com.alertify.monitor.application.mapper"
 })
 public class AdapterConfig {
 }

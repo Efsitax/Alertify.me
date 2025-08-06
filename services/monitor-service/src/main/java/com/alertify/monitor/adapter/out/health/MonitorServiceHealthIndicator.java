@@ -1,10 +1,10 @@
 package com.alertify.monitor.adapter.out.health;
 
-import com.alertify.monitor.domain.repository.MonitorRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -12,15 +12,24 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class MonitorServiceHealthIndicator implements HealthIndicator {
 
-    private final MonitorRepository monitorRepository;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     public Health health() {
         try {
-            long monitorCount = monitorRepository.findAll().size();
+            Long monitorCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM monitors",
+                    Long.class
+            );
+
+            Long ruleCount = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM rules",
+                    Long.class
+            );
 
             return Health.up()
-                    .withDetail("monitorCount", monitorCount)
+                    .withDetail("monitorCount", monitorCount != null ? monitorCount : 0)
+                    .withDetail("ruleCount", ruleCount != null ? ruleCount : 0)
                     .withDetail("repositoryStatus", "healthy")
                     .withDetail("service", "Monitor Service")
                     .withDetail("version", "1.0.0")
@@ -31,6 +40,7 @@ public class MonitorServiceHealthIndicator implements HealthIndicator {
             return Health.down()
                     .withDetail("error", e.getMessage())
                     .withDetail("cause", e.getClass().getSimpleName())
+                    .withDetail("service", "Monitor Service")
                     .build();
         }
     }

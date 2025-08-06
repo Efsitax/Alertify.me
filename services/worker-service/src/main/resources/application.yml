@@ -28,20 +28,93 @@ spring:
       auto-offset-reset: earliest
     properties:
       spring.json.add.type.headers: false
-    topic:
-      alerts: alert.created
 
 services:
   monitor-service:
-    url: http://localhost:8080
+    url: ${MONITOR_SERVICE_URL:http://localhost:8080}
   fetcher-service:
-    url: http://localhost:8081
+    url: ${FETCHER_SERVICE_URL:http://localhost:8081}
 
 worker:
   schedule:
-    interval: 300000
+    interval: ${WORKER_SCHEDULE_INTERVAL:60000}
+  fetcher:
+    mode: ${FETCHER_MODE:mock}
+    mock:
+      failure-rate: 0.05
+      delay-min: 100
+      delay-max: 500
+      price-volatility: 0.02
+    http:
+      timeout: 10000
+      retry-attempts: 3
+      circuit-breaker-threshold: 5
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: always
+    prometheus:
+      enabled: true
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+kafka:
+  topics:
+    alerts: alert.created
 
 logging:
   level:
     root: INFO
+    com.alertify.worker: DEBUG
     org.springframework.web: WARN
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      monitor-service:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowType: COUNT_BASED
+        minimumNumberOfCalls: 5
+        waitDurationInOpenState: 30s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+      fetcher-service:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        permittedNumberOfCallsInHalfOpenState: 3
+        slidingWindowType: COUNT_BASED
+        minimumNumberOfCalls: 5
+        waitDurationInOpenState: 30s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+  retry:
+    instances:
+      monitor-service:
+        maxAttempts: 3
+        waitDuration: 1s
+        retryExceptions:
+          - org.springframework.web.reactive.function.client.WebClientRequestException
+          - java.net.ConnectException
+          - java.net.SocketTimeoutException
+      fetcher-service:
+        maxAttempts: 3
+        waitDuration: 1s
+        retryExceptions:
+          - org.springframework.web.reactive.function.client.WebClientRequestException
+          - java.net.ConnectException
+          - java.net.SocketTimeoutException
+  timelimiter:
+    instances:
+      monitor-service:
+        timeoutDuration: 10s
+      fetcher-service:
+        timeoutDuration: 10s

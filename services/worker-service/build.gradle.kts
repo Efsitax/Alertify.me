@@ -29,6 +29,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("io.netty:netty-resolver-dns-native-macos:4.1.111.Final:osx-aarch_64")
 
+    implementation("io.github.resilience4j:resilience4j-spring-boot3:2.1.0")
+    implementation("io.github.resilience4j:resilience4j-reactor:2.1.0")
+
     implementation("org.springframework.boot:spring-boot-starter-quartz")
 
     implementation("org.springframework.kafka:spring-kafka")
