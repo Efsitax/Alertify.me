@@ -8,17 +8,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-/**
- * HepsiBurada-specific fetcher implementation with Selenium support
- * Handles price extraction from HepsiBurada.com product pages
- */
 @Slf4j
 @Component
 public class HepsiBuradaFetcher extends AbstractSiteFetcher {
@@ -29,48 +26,11 @@ public class HepsiBuradaFetcher extends AbstractSiteFetcher {
     );
 
     private static final SiteConfig HEPSIBURADA_CONFIG = SiteConfig.builder()
-            .priceSelectors(List.of(
-                    "#offering-price",                    // Main price selector
-                    ".price-value",                       // Alternative price
-                    ".product-price .price-value",        // Nested price
-                    "[data-test-id='price-current-price']", // Test ID
-                    ".notranslate",                       // Sometimes price is in notranslate
-                    "#priceContainer .price-value",       // Container-based
-                    ".product-price-text",                // Alternative text selector
-                    "[data-price-text]",                  // Data attribute
-                    ".offering-price-info .price-value"   // Detailed price container
-            ))
-            .fallbackSelectors(List.of(
-                    ".price",
-                    ".current-price",
-                    ".sale-price",
-                    "[data-price]",
-                    ".product-detail-price",
-                    ".product-price-container"
-            ))
-            .priceRegexPatterns(List.of(
-                    "([0-9]{1,3}(?:\\.[0-9]{3})*,[0-9]{2})", // Turkish format: 1.234,56
-                    "([0-9]+,[0-9]{2})",                      // Simple comma: 1234,56
-                    "([0-9]+)",                               // Integer: 1234
-                    "([0-9]+\\.[0-9]{2})"                     // Dot format: 1234.56
-            ))
-            .headers(Map.of(
-                    "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
-                    "Accept-Language", "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
-                    "Accept-Encoding", "gzip, deflate, br",
-                    "Connection", "keep-alive",
-                    "Upgrade-Insecure-Requests", "1",
-                    "Sec-Fetch-Dest", "document",
-                    "Sec-Fetch-Mode", "navigate",
-                    "Sec-Fetch-Site", "none",
-                    "Sec-Fetch-User", "?1",
-                    "Cache-Control", "max-age=0"
-            ))
             .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
             .timeoutMs(20000)
-            .requiresJs(true)   // ✅ Changed to true - Use Selenium
-            .useSelenium(true)  // ✅ Changed to true - Force Selenium
-            .waitAfterLoadMs(4000) // Increased wait time for dynamic content
+            .requiresJs(true)
+            .useSelenium(true)
+            .waitAfterLoadMs(5000)
             .defaultCurrency("TRY")
             .enableJsonLd(true)
             .enableMetaTags(true)
@@ -88,7 +48,7 @@ public class HepsiBuradaFetcher extends AbstractSiteFetcher {
 
     @Override
     public String getSiteName() {
-        return "HepsiBurada";
+        return "HepsiBurada-XPath";
     }
 
     @Override
@@ -103,369 +63,436 @@ public class HepsiBuradaFetcher extends AbstractSiteFetcher {
 
     @Override
     public int getPriority() {
-        return 20; // High priority for HepsiBurada
+        return 10;
     }
 
     @Override
     protected Optional<BigDecimal> extractPrice(ExtractionContext context) {
-        log.info("Extracting price from HepsiBurada using Selenium-based specialized logic");
+        log.info("Extracting price from HepsiBurada using ANTI-OBFUSCATION techniques");
 
-        // Strategy 1: Try JSON-LD structured data
-        Optional<BigDecimal> jsonLdPrice = extractFromJsonLd(context);
-        if (jsonLdPrice.isPresent()) {
-            log.info("Price extracted from JSON-LD: {}", jsonLdPrice.get());
-            return jsonLdPrice;
+        Optional<BigDecimal> xpathPrice = extractWithXPathTextBased(context);
+        if (xpathPrice.isPresent()) {
+            log.info("SUCCESS: XPath text-based extraction: {}", xpathPrice.get());
+            return xpathPrice;
         }
 
-        // Strategy 2: Try HepsiBurada-specific selectors
-        Optional<BigDecimal> selectorPrice = extractWithHepsiBuradaSelectors(context);
-        if (selectorPrice.isPresent()) {
-            log.info("Price extracted with HepsiBurada selectors: {}", selectorPrice.get());
-            return selectorPrice;
+        Optional<BigDecimal> stylePrice = extractByComputedStyle(context);
+        if (stylePrice.isPresent()) {
+            log.info("SUCCESS: Computed style extraction: {}", stylePrice.get());
+            return stylePrice;
         }
 
-        // Strategy 3: Try data attributes
-        Optional<BigDecimal> dataPrice = extractFromDataAttributes(context);
-        if (dataPrice.isPresent()) {
-            log.info("Price extracted from data attributes: {}", dataPrice.get());
-            return dataPrice;
+        Optional<BigDecimal> structuralPrice = extractByStructuralPattern(context);
+        if (structuralPrice.isPresent()) {
+            log.info("SUCCESS: Structural pattern extraction: {}", structuralPrice.get());
+            return structuralPrice;
         }
 
-        // Strategy 4: Try meta tags
-        Optional<BigDecimal> metaPrice = extractFromMetaTags(context);
-        if (metaPrice.isPresent()) {
-            log.info("Price extracted from meta tags: {}", metaPrice.get());
-            return metaPrice;
+        Optional<BigDecimal> proximityPrice = extractByTextProximity(context);
+        if (proximityPrice.isPresent()) {
+            log.info("SUCCESS: Text proximity extraction: {}", proximityPrice.get());
+            return proximityPrice;
         }
 
-        // Strategy 5: Fallback to generic selectors
-        Optional<BigDecimal> fallbackPrice = trySelectorsExtraction(context);
-        if (fallbackPrice.isPresent()) {
-            log.info("Price extracted with fallback selectors: {}", fallbackPrice.get());
-            return fallbackPrice;
-        }
-
-        // Strategy 6: Aggressive text scanning
-        Optional<BigDecimal> textPrice = extractFromPageText(context);
-        if (textPrice.isPresent()) {
-            log.info("Price extracted from page text: {}", textPrice.get());
-            return textPrice;
-        }
-
-        log.warn("Could not extract price from HepsiBurada page: {}", context.url());
+        log.warn("ALL ANTI-OBFUSCATION STRATEGIES FAILED for URL: {}", context.url());
         return Optional.empty();
     }
 
-    /**
-     * Extract price from JSON-LD structured data
-     */
-    private Optional<BigDecimal> extractFromJsonLd(ExtractionContext context) {
+    private Optional<BigDecimal> extractWithXPathTextBased(ExtractionContext context) {
         try {
             Document doc = Jsoup.parse(context.html());
-            Element jsonLdScript = doc.selectFirst("script[type='application/ld+json']");
 
-            if (jsonLdScript != null) {
-                String jsonContent = jsonLdScript.html();
-                return parseJsonLdForPrice(jsonContent);
+            String[] textPatterns = {
+                    "sepete özel",
+                    "özel fiyat",
+                    "indirimli",
+                    "kazancınız",
+                    "tasarruf"
+            };
+
+            for (String pattern : textPatterns) {
+                Optional<BigDecimal> price = findPriceByTextContext(doc, pattern);
+                if (price.isPresent()) {
+                    log.debug("XPath text pattern '{}' found price: {}", pattern, price.get());
+                    return price;
+                }
             }
+
+            Optional<BigDecimal> currencyPrice = findPriceByCurrencyProximity(doc);
+            if (currencyPrice.isPresent()) {
+                log.debug("Currency proximity found price: {}", currencyPrice.get());
+                return currencyPrice;
+            }
+
+            return Optional.empty();
+
         } catch (Exception e) {
-            log.debug("JSON-LD extraction failed for HepsiBurada: {}", e.getMessage());
+            log.debug("XPath text-based extraction failed: {}", e.getMessage());
+            return Optional.empty();
         }
+    }
+
+    private Optional<BigDecimal> findPriceByTextContext(Document doc, String contextText) {
+        Elements contextElements = doc.getElementsContainingOwnText(contextText);
+
+        for (Element contextElement : contextElements) {
+            Set<Element> relatedElements = new HashSet<>();
+
+            Element parent = contextElement.parent();
+            if (parent != null) {
+                relatedElements.addAll(parent.getAllElements());
+            }
+
+            Element grandParent = parent != null ? parent.parent() : null;
+            if (grandParent != null) {
+                relatedElements.addAll(grandParent.getAllElements());
+            }
+
+            Elements followingSiblings = contextElement.nextElementSiblings();
+            relatedElements.addAll(followingSiblings);
+
+            for (Element element : relatedElements) {
+                String text = element.ownText().trim();
+                if (containsNumericPrice(text)) {
+                    Optional<BigDecimal> price = parseHepsiBuradaPrice(text);
+                    if (price.isPresent() && isReasonablePrice(price.get())) {
+                        log.debug("Found price {} near context '{}'", price.get(), contextText);
+                        return price;
+                    }
+                }
+            }
+        }
+
         return Optional.empty();
     }
 
-    /**
-     * Parse JSON-LD content for price (enhanced regex-based approach)
-     */
-    private Optional<BigDecimal> parseJsonLdForPrice(String jsonContent) {
-        try {
-            if (jsonContent.contains("\"@type\":\"Product\"") || jsonContent.contains("\"@type\":\"Offer\"")) {
-                // Enhanced regex patterns for HepsiBurada JSON-LD
-                String[] pricePatterns = {
-                        "\"price\"\\s*:\\s*\"?([0-9]+(?:\\.[0-9]{2})?)\"?",
-                        "\"priceValue\"\\s*:\\s*\"?([0-9]+(?:\\.[0-9]{2})?)\"?",
-                        "\"amount\"\\s*:\\s*\"?([0-9]+(?:\\.[0-9]{2})?)\"?",
-                        "\"lowPrice\"\\s*:\\s*\"?([0-9]+(?:\\.[0-9]{2})?)\"?",
-                        "\"offers\"[^}]*\"price\"\\s*:\\s*\"?([0-9]+(?:\\.[0-9]{2})?)\"?"
+    private Optional<BigDecimal> findPriceByCurrencyProximity(Document doc) {
+        String[] currencySymbols = {"₺", "TL", "tl"};
+
+        for (String currency : currencySymbols) {
+            Elements currencyElements = doc.getElementsContainingOwnText(currency);
+
+            for (Element currencyElement : currencyElements) {
+                String fullText = currencyElement.text();
+
+                String[] patterns = {
+                        "([0-9]{1,3}(?:\\.[0-9]{3})*,[0-9]{2})\\s*(?:" + currency + ")",
+                        "([0-9]+,[0-9]{2})\\s*(?:" + currency + ")",
+                        "(?:" + currency + ")\\s*([0-9]{1,3}(?:\\.[0-9]{3})*,[0-9]{2})",
+                        "(?:" + currency + ")\\s*([0-9]+,[0-9]{2})"
                 };
 
-                for (String pattern : pricePatterns) {
-                    java.util.regex.Pattern regex = java.util.regex.Pattern.compile(pattern);
-                    java.util.regex.Matcher matcher = regex.matcher(jsonContent);
-
+                for (String pattern : patterns) {
+                    Pattern regex = Pattern.compile(pattern);
+                    Matcher matcher = regex.matcher(fullText);
                     if (matcher.find()) {
                         try {
                             String priceStr = matcher.group(1);
-                            BigDecimal price = new BigDecimal(priceStr);
-                            log.debug("JSON-LD price found with pattern '{}': {}", pattern, price);
-                            return Optional.of(price);
-                        } catch (NumberFormatException e) {
-                            log.debug("Failed to parse JSON-LD price: {}", matcher.group(1));
+                            Optional<BigDecimal> price = parseHepsiBuradaPrice(priceStr);
+                            if (price.isPresent() && isReasonablePrice(price.get())) {
+                                return price;
+                            }
+                        } catch (Exception e) {
+                            // continue
                         }
                     }
                 }
             }
-        } catch (Exception e) {
-            log.debug("Failed to parse JSON-LD content: {}", e.getMessage());
         }
+
         return Optional.empty();
     }
 
-    /**
-     * Extract price using HepsiBurada-specific selectors
-     */
-    private Optional<BigDecimal> extractWithHepsiBuradaSelectors(ExtractionContext context) {
+    private Optional<BigDecimal> extractByComputedStyle(ExtractionContext context) {
         try {
             Document doc = Jsoup.parse(context.html());
 
-            // Enhanced HepsiBurada selectors based on latest site structure
-            String[] hepsiBuradaSelectors = {
-                    "#offering-price",                          // Main price
-                    "#priceContainer .price-value",             // Container
-                    ".product-price .price-value",              // Product price
-                    "[data-test-id='price-current-price']",     // Test ID
-                    ".price-value.notranslate",                 // Notranslate price
-                    ".price-value:not(.old-price)",             // Current price (not old)
-                    "#productPrice .price-value",               // Product price section
-                    ".offering-price-info .price-value",        // Offering info
-                    ".product-detail-price .price-value",       // Detail page
-                    "[data-price-text]",                        // Data attribute
-                    ".product-price-text",                      // Text container
-                    ".current-price-value",                     // Current price
-                    ".final-price .price-value"                 // Final price
-            };
+            Map<BigDecimal, Integer> priceStyleScores = new HashMap<>();
 
-            for (String selector : hepsiBuradaSelectors) {
-                Element priceElement = doc.selectFirst(selector);
-                if (priceElement != null) {
-                    String priceText = priceElement.text();
-                    log.debug("Found price element with selector '{}': {}", selector, priceText);
-
-                    Optional<BigDecimal> price = parseHepsiBuradaPrice(priceText);
-                    if (price.isPresent()) {
-                        return price;
-                    }
-
-                    // Also try data attributes on this element
-                    String dataPriceValue = priceElement.attr("data-price");
-                    if (!dataPriceValue.isEmpty()) {
-                        Optional<BigDecimal> dataPrice = parseHepsiBuradaPrice(dataPriceValue);
-                        if (dataPrice.isPresent()) {
-                            return dataPrice;
-                        }
+            Elements allElements = doc.select("*");
+            for (Element element : allElements) {
+                String text = element.ownText().trim();
+                if (containsNumericPrice(text)) {
+                    Optional<BigDecimal> price = parseHepsiBuradaPrice(text);
+                    if (price.isPresent() && isReasonablePrice(price.get())) {
+                        int styleScore = calculateStyleScore(element);
+                        priceStyleScores.put(price.get(), styleScore);
+                        log.debug("Style-based candidate: {} (score: {})", price.get(), styleScore);
                     }
                 }
             }
 
-        } catch (Exception e) {
-            log.debug("HepsiBurada selector extraction failed: {}", e.getMessage());
-        }
-        return Optional.empty();
-    }
+            return priceStyleScores.entrySet().stream()
+                    .max(Map.Entry.comparingByValue())
+                    .map(Map.Entry::getKey);
 
-    /**
-     * Parse HepsiBurada-specific price format with enhanced patterns
-     */
-    private Optional<BigDecimal> parseHepsiBuradaPrice(String priceText) {
-        if (priceText == null || priceText.trim().isEmpty()) {
+        } catch (Exception e) {
+            log.debug("Computed style extraction failed: {}", e.getMessage());
             return Optional.empty();
         }
+    }
 
-        // Clean the price text (HepsiBurada format)
+    private int calculateStyleScore(Element element) {
+        int score = 0;
+        String tagName = element.tagName().toLowerCase();
+        String className = element.className().toLowerCase();
+
+        switch (tagName) {
+            case "h1" -> score += 15;
+            case "h2" -> score += 12;
+            case "h3" -> score += 10;
+            case "strong", "b" -> score += 8;
+            case "span" -> score += 5;
+            case "div" -> score += 3;
+        }
+
+        if (className.contains("price") || className.contains("cost") ||
+                className.contains("amount") || className.contains("value")) {
+            score += 10;
+        }
+
+        if (className.contains("special") || className.contains("discount") ||
+                className.contains("sale") || className.contains("offer")) {
+            score += 8;
+        }
+
+        if (className.contains("current") || className.contains("main") ||
+                className.contains("primary")) {
+            score += 6;
+        }
+
+        Element parent = element.parent();
+        if (parent != null) {
+            String parentText = parent.text().toLowerCase();
+            if (parentText.contains("sepete özel") || parentText.contains("özel fiyat")) {
+                score += 20;
+            }
+            if (parentText.contains("indirimli") || parentText.contains("kampanya")) {
+                score += 15;
+            }
+            if (parentText.contains("kazancınız") || parentText.contains("tasarruf")) {
+                score += 10;
+            }
+        }
+
+        return score;
+    }
+
+    private Optional<BigDecimal> extractByStructuralPattern(ExtractionContext context) {
+        try {
+            Document doc = Jsoup.parse(context.html());
+
+            String[] structuralSelectors = {
+                    "[class*='price']:not([class*='old']):not([class*='original'])",
+                    "[class*='amount']:not([class*='was'])",
+                    "[class*='cost']:not([class*='prev'])",
+                    "[class*='special']",
+                    "[class*='discount']",
+                    "[class*='offer']",
+
+                    "[data-price]",
+                    "[data-amount]",
+                    "[data-cost]",
+                    "[data-value]",
+
+                    "main [role='main'] *",
+                    ".container *",
+                    "#content *",
+
+                    "h1 + * *", "h2 + * *", "h3 + * *"
+            };
+
+            Map<BigDecimal, Integer> structuralScores = new HashMap<>();
+
+            for (String selector : structuralSelectors) {
+                try {
+                    Elements elements = doc.select(selector);
+                    for (Element element : elements) {
+                        String text = element.ownText().trim();
+                        if (containsNumericPrice(text)) {
+                            Optional<BigDecimal> price = parseHepsiBuradaPrice(text);
+                            if (price.isPresent() && isReasonablePrice(price.get())) {
+                                int selectorScore = getSelectorScore(selector);
+                                structuralScores.merge(price.get(), selectorScore, Integer::sum);
+                                log.debug("Structural pattern '{}' found price: {} (score: {})",
+                                        selector, price.get(), selectorScore);
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    log.debug("Selector '{}' failed: {}", selector, e.getMessage());
+                }
+            }
+
+            return structuralScores.entrySet().stream()
+                    .max(Map.Entry.comparingByValue())
+                    .map(Map.Entry::getKey);
+
+        } catch (Exception e) {
+            log.debug("Structural pattern extraction failed: {}", e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    private int getSelectorScore(String selector) {
+        int score = 0;
+
+        if (selector.contains("special") || selector.contains("discount") || selector.contains("offer")) {
+            score += 15;
+        }
+        if (selector.contains("price") || selector.contains("amount") || selector.contains("cost")) {
+            score += 12;
+        }
+        if (selector.contains("data-")) {
+            score += 10; // Data attributes are usually stable
+        }
+        if (selector.contains("main") || selector.contains("content")) {
+            score += 8;
+        }
+        if (selector.contains("h1") || selector.contains("h2")) {
+            score += 6;
+        }
+
+        return score;
+    }
+
+    private Optional<BigDecimal> extractByTextProximity(ExtractionContext context) {
+        try {
+            Document doc = Jsoup.parse(context.html());
+
+            doc.select("script, style, noscript").remove();
+            String cleanText = doc.text();
+
+            String[] contextualPatterns = {
+                    "sepete\\s+özel[^0-9]*([0-9]{1,3}(?:\\.[0-9]{3})*,[0-9]{2})\\s*TL",
+                    "özel\\s+fiyat[^0-9]*([0-9]{1,3}(?:\\.[0-9]{3})*,[0-9]{2})\\s*TL",
+
+                    "₺\\s*([0-9]{1,3}(?:\\.[0-9]{3})*,[0-9]{2})",
+                    "([0-9]{1,3}(?:\\.[0-9]{3})*,[0-9]{2})\\s*₺",
+
+                    "([0-9]{1,3}(?:\\.[0-9]{3})*,[0-9]{2})\\s*TL",
+                    "([0-9]+,[0-9]{2})\\s*TL",
+
+                    "fiyat[ı:]?\\s*([0-9]{1,3}(?:\\.[0-9]{3})*,[0-9]{2})",
+                    "tutar[ı:]?\\s*([0-9]{1,3}(?:\\.[0-9]{3})*,[0-9]{2})",
+
+                    "([0-9]{1,3}(?:\\.[0-9]{3})*,[0-9]{2})(?=\\s*$)",
+                    "([0-9]+,[0-9]{2})(?=\\s*TL\\s*$)"
+            };
+
+            Map<BigDecimal, Integer> proximityScores = new HashMap<>();
+
+            for (int i = 0; i < contextualPatterns.length; i++) {
+                String pattern = contextualPatterns[i];
+                Pattern regex = Pattern.compile(pattern, Pattern.CASE_INSENSITIVE);
+                Matcher matcher = regex.matcher(cleanText);
+
+                while (matcher.find()) {
+                    try {
+                        String priceStr = matcher.group(1);
+                        BigDecimal price = parseHepsiBuradaPriceStrict(priceStr);
+
+                        if (isReasonablePrice(price)) {
+                            int patternScore = contextualPatterns.length - i;
+                            proximityScores.merge(price, patternScore, Integer::sum);
+
+                            log.debug("Text proximity pattern '{}' found price: {} (score: {})",
+                                    pattern, price, patternScore);
+                        }
+                    } catch (Exception e) {
+                        // continue
+                    }
+                }
+            }
+
+            return proximityScores.entrySet().stream()
+                    .max(Map.Entry.comparingByValue())
+                    .map(Map.Entry::getKey);
+
+        } catch (Exception e) {
+            log.debug("Text proximity analysis failed: {}", e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    private boolean containsNumericPrice(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return false;
+        }
+
+        return text.matches(".*[0-9]{1,3}(?:[\\.,][0-9]{3})*[\\.,]?[0-9]{0,2}.*") &&
+                (text.contains("TL") || text.contains("₺") ||
+                        text.matches(".*[0-9]+[\\.,][0-9]{2}.*"));
+    }
+
+    private Optional<BigDecimal> parseHepsiBuradaPrice(String priceText) {
+        try {
+            BigDecimal price = parseHepsiBuradaPriceStrict(priceText);
+            return Optional.of(price);
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
+    }
+
+    private BigDecimal parseHepsiBuradaPriceStrict(String priceText) {
+        if (priceText == null || priceText.trim().isEmpty()) {
+            throw new NumberFormatException("Empty price text");
+        }
+
         String cleaned = priceText
                 .replaceAll("TL", "")
                 .replaceAll("₺", "")
                 .replaceAll("\\s+", "")
-                .replaceAll("[^0-9.,]", "") // Remove all non-numeric except . and ,
+                .replaceAll("[^0-9.,]", "")
                 .trim();
 
-        log.debug("Cleaned price text: {} -> {}", priceText, cleaned);
-
-        // HepsiBurada price patterns (more comprehensive)
         String[] patterns = {
-                "([0-9]{1,3}(?:\\.[0-9]{3})*,[0-9]{2})",  // 1.234,56
-                "([0-9]+,[0-9]{2})",                       // 1234,56
-                "([0-9]{1,3}(?:\\,[0-9]{3})*\\.[0-9]{2})", // 1,234.56 (less common)
-                "([0-9]+\\.[0-9]{2})",                     // 1234.56
-                "([0-9]+\\.[0-9]{3})",                     // 1234.500 (sometimes no decimals shown)
-                "([0-9]+)"                                 // 1234 (integer)
+                "([0-9]{1,3}(?:\\.[0-9]{3})*,[0-9]{2})",
+                "([0-9]+,[0-9]{2})",
+                "([0-9]{1,3}(?:\\,[0-9]{3})*\\.[0-9]{2})",
+                "([0-9]+\\.[0-9]{2})",
+                "([0-9]+)"
         };
 
         for (String pattern : patterns) {
-            java.util.regex.Pattern regex = java.util.regex.Pattern.compile(pattern);
-            java.util.regex.Matcher matcher = regex.matcher(cleaned);
+            Pattern regex = Pattern.compile(pattern);
+            Matcher matcher = regex.matcher(cleaned);
 
             if (matcher.find()) {
-                try {
-                    String priceMatch = matcher.group(1);
-                    log.debug("Price pattern matched: {} with pattern: {}", priceMatch, pattern);
+                String priceMatch = matcher.group(1);
+                String normalized;
 
-                    // Convert to decimal format
-                    String normalized;
-                    if (priceMatch.contains(",") && priceMatch.contains(".")) {
-                        // Determine which is decimal separator based on position
-                        int lastComma = priceMatch.lastIndexOf(",");
-                        int lastDot = priceMatch.lastIndexOf(".");
+                if (priceMatch.contains(",") && priceMatch.contains(".")) {
+                    int lastComma = priceMatch.lastIndexOf(",");
+                    int lastDot = priceMatch.lastIndexOf(".");
 
-                        if (lastComma > lastDot) {
-                            // Comma is decimal: 1.234,56 -> 1234.56
-                            normalized = priceMatch.substring(0, lastComma).replace(".", "").replace(",", "") +
-                                    "." + priceMatch.substring(lastComma + 1);
-                        } else {
-                            // Dot is decimal: 1,234.56 -> 1234.56
-                            normalized = priceMatch.substring(0, lastDot).replace(",", "") +
-                                    "." + priceMatch.substring(lastDot + 1);
-                        }
-                    } else if (priceMatch.contains(",")) {
-                        // Only comma - check if it's decimal separator
-                        if (priceMatch.matches(".*,[0-9]{2}$")) {
-                            // Decimal separator: 1234,56 -> 1234.56
-                            normalized = priceMatch.replace(",", ".");
-                        } else {
-                            // Thousands separator: 1,234 -> 1234
-                            normalized = priceMatch.replace(",", "");
-                        }
+                    if (lastComma > lastDot) {
+                        normalized = priceMatch.substring(0, lastComma).replace(".", "") +
+                                "." + priceMatch.substring(lastComma + 1);
                     } else {
-                        // No comma, keep as is
-                        normalized = priceMatch;
+                        normalized = priceMatch.substring(0, lastDot).replace(",", "") +
+                                "." + priceMatch.substring(lastDot + 1);
                     }
-
-                    BigDecimal price = new BigDecimal(normalized);
-                    log.debug("Parsed HepsiBurada price: {} -> {}", priceText, price);
-                    return Optional.of(price);
-
-                } catch (NumberFormatException e) {
-                    log.debug("Failed to parse price match '{}': {}", matcher.group(1), e.getMessage());
+                } else if (priceMatch.contains(",")) {
+                    if (priceMatch.matches(".*,[0-9]{2}$")) {
+                        normalized = priceMatch.replace(",", ".");
+                    } else {
+                        normalized = priceMatch.replace(",", "");
+                    }
+                } else {
+                    normalized = priceMatch;
                 }
+
+                return new BigDecimal(normalized);
             }
         }
 
-        return Optional.empty();
+        throw new NumberFormatException("Could not parse price: " + priceText);
     }
 
-    /**
-     * Extract price from data attributes
-     */
-    private Optional<BigDecimal> extractFromDataAttributes(ExtractionContext context) {
-        try {
-            Document doc = Jsoup.parse(context.html());
-
-            // Enhanced data attribute selectors for HepsiBurada
-            String[] dataSelectors = {
-                    "[data-price]",
-                    "[data-product-price]",
-                    "[data-current-price]",
-                    "[data-offering-price]",
-                    "[data-price-value]",
-                    "[data-test-id*='price'] [data-value]",
-                    "[data-price-text]"
-            };
-
-            for (String selector : dataSelectors) {
-                Element element = doc.selectFirst(selector);
-                if (element != null) {
-                    String[] attributesToTry = {
-                            "data-price", "data-product-price", "data-current-price",
-                            "data-offering-price", "data-price-value", "data-value",
-                            "data-price-text"
-                    };
-
-                    for (String attr : attributesToTry) {
-                        String dataPrice = element.attr(attr);
-                        if (!dataPrice.isEmpty()) {
-                            Optional<BigDecimal> price = parsePriceString(dataPrice);
-                            if (price.isPresent()) {
-                                log.debug("Price extracted from data attribute '{}' in '{}': {}",
-                                        attr, selector, price.get());
-                                return price;
-                            }
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.debug("Data attribute extraction failed for HepsiBurada: {}", e.getMessage());
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Extract price from meta tags
-     */
-    private Optional<BigDecimal> extractFromMetaTags(ExtractionContext context) {
-        try {
-            Document doc = Jsoup.parse(context.html());
-
-            String[] metaSelectors = {
-                    "meta[property='product:price:amount']",
-                    "meta[property='og:price:amount']",
-                    "meta[name='price']",
-                    "meta[property='price']",
-                    "meta[name='product:price']"
-            };
-
-            for (String selector : metaSelectors) {
-                Element metaElement = doc.selectFirst(selector);
-                if (metaElement != null) {
-                    String content = metaElement.attr("content");
-                    if (!content.isEmpty()) {
-                        Optional<BigDecimal> price = parsePriceString(content);
-                        if (price.isPresent()) {
-                            log.debug("Price extracted from meta tag '{}': {}", selector, price.get());
-                            return price;
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.debug("Meta tag extraction failed for HepsiBurada: {}", e.getMessage());
-        }
-        return Optional.empty();
-    }
-
-    /**
-     * Extract price from page text as last resort
-     */
-    private Optional<BigDecimal> extractFromPageText(ExtractionContext context) {
-        try {
-            Document doc = Jsoup.parse(context.html());
-
-            // Remove scripts and styles
-            doc.select("script, style, noscript").remove();
-
-            String pageText = doc.text();
-
-            // Look for Turkish price patterns in text
-            String[] textPatterns = {
-                    "([0-9]{1,3}(?:\\.[0-9]{3})*,[0-9]{2})\\s*TL",
-                    "([0-9]+,[0-9]{2})\\s*TL",
-                    "₺\\s*([0-9]{1,3}(?:\\.[0-9]{3})*,[0-9]{2})",
-                    "₺\\s*([0-9]+,[0-9]{2})",
-                    "Fiyat[:\\s]*([0-9]{1,3}(?:\\.[0-9]{3})*,[0-9]{2})",
-                    "Fiyat[:\\s]*([0-9]+,[0-9]{2})"
-            };
-
-            for (String pattern : textPatterns) {
-                java.util.regex.Pattern regex = java.util.regex.Pattern.compile(pattern);
-                java.util.regex.Matcher matcher = regex.matcher(pageText);
-
-                if (matcher.find()) {
-                    String priceStr = matcher.group(1);
-                    Optional<BigDecimal> price = parseHepsiBuradaPrice(priceStr);
-                    if (price.isPresent()) {
-                        // Sanity check
-                        if (price.get().compareTo(BigDecimal.valueOf(1)) >= 0 &&
-                                price.get().compareTo(BigDecimal.valueOf(1000000)) <= 0) {
-                            log.debug("Price extracted from text with pattern '{}': {}", pattern, price.get());
-                            return price;
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            log.debug("Page text extraction failed: {}", e.getMessage());
-        }
-        return Optional.empty();
+    private boolean isReasonablePrice(BigDecimal price) {
+        return price.compareTo(BigDecimal.valueOf(1)) >= 0 &&
+                price.compareTo(BigDecimal.valueOf(100000)) <= 0;
     }
 
     @Override
@@ -474,10 +501,7 @@ public class HepsiBuradaFetcher extends AbstractSiteFetcher {
             return false;
         }
 
-        // Enhanced HepsiBurada URL validation
-        return url.contains("-p-") ||
-                url.contains("/product/") ||
-                url.matches(".*hepsiburada\\.com.*\\d+.*") ||
-                url.matches(".*hepsiburada\\.com.*p-.*");
+        return url.contains("hepsiburada.com") &&
+                (url.contains("-p-") || url.contains("/product/") || url.matches(".*\\d+.*"));
     }
 }
