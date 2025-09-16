@@ -1,0 +1,50 @@
+server:
+  port: 8083
+
+spring:
+    application:
+        name: notification-service
+
+    kafka:
+      bootstrap-servers: localhost:9092
+      consumer:
+        group-id: notification-service
+        auto-offset-reset: earliest
+        key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+        value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+        properties:
+          spring.json.trusted.packages: "com.alertify.common.domain.event"
+          spring.json.value.default.type: "com.alertify.common.domain.event.AlertEvent"
+
+    mail:
+      host: smtp-mail.outlook.com
+      port: 587
+      username: ${EMAIL_USERNAME:kadir--ugurlu@hotmail.com}
+      password: ${EMAIL_PASSWORD:*852654Kadir852654*}
+      properties:
+          mail:
+              smtp:
+                  auth: true
+                  starttls:
+                      enable: true
+                      required: true
+
+services:
+  monitor-service:
+    url: ${MONITOR_SERVICE_URL:http://localhost:8080}
+
+notification:
+  default:
+    recipient: ${DEFAULT_NOTIFICATION_RECIPIENT:admin@alertify.com}
+
+management:
+    endpoints:
+        web:
+          exposure:
+            include: health,info,metrics
+
+logging:
+  level:
+    root: INFO
+    com.alertify.notification: DEBUG
+    org.springframework.kafka: WARN

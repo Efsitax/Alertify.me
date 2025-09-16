@@ -5,7 +5,7 @@ import com.alertify.worker.domain.entity.Alert;
 import com.alertify.worker.domain.entity.Monitor;
 import com.alertify.worker.domain.entity.Rule;
 import com.alertify.worker.domain.entity.Snapshot;
-import com.alertify.worker.domain.model.AlertEvent;
+import com.alertify.common.domain.event.AlertEvent;
 import com.alertify.worker.domain.repository.AlertRepository;
 import com.alertify.worker.domain.repository.SnapshotRepository;
 import com.alertify.worker.domain.model.MetricSample;

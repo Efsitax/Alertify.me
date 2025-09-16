@@ -1,6 +1,6 @@
 package com.alertify.worker.adapter.out.kafka;
 
-import com.alertify.worker.domain.model.AlertEvent;
+import com.alertify.common.domain.event.AlertEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
